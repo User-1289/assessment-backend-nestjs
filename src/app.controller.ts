@@ -24,4 +24,9 @@ export class AppController {
   async getDashboardRevenue() : Promise<any> {
     return this.appService.getDashboardRevenue();
   }
+
+  @Get("/api/dashboard/customer-satisfaction")
+  async getDashboardCustomerSat(){
+    return this.appService.getDashboardCustomerSat()
+  }
 }
