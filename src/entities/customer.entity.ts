@@ -14,7 +14,7 @@ export class Customer {
   @Column()
   date_added: string
 
-@Column({ type: 'varchar', length: 100, default: 'India', nullable: false })
+@Column()
 region: string;
   
 
