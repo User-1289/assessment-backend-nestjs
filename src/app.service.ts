@@ -122,7 +122,7 @@ export class AppService {
     };
   }
 
- async getDashboardRevenue() {
+async getDashboardRevenue() {
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     const today = new Date();               
@@ -151,7 +151,6 @@ export class AppService {
         .addSelect('SUM(product.price)', 'totalSales')
         .getRawOne()
 
-      // getRawOne() returns an object with keys exactly as selected
       const totalOrders = parseInt(result.totalOrders, 10) || 0;
       const totalSales = parseFloat(result.totalSales) || 0;
 
@@ -166,11 +165,9 @@ export class AppService {
       };
     });
 
-    // ---- 3️⃣  Execute all queries in parallel ---------------------
     const revenueReport = await Promise.all(revenuePromises);
 
-    // ---- 4️⃣  Return the array ------------------------------------
-    return revenueReport; // [{date, totalOrders, totalSales}, …]
+    return revenueReport; 
   }
     
 }
