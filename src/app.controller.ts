@@ -19,4 +19,9 @@ export class AppController {
   async getDashboardMetrics(@Query('date_start') dateStart: string, @Query('date_end') dateEnd: string): Promise<any> {
     return this.appService.getDashboardMetrics(dateStart, dateEnd);
   }
+
+  @Get("/api/dashboard/revenue")
+  async getDashboardRevenue() : Promise<any> {
+    return this.appService.getDashboardRevenue();
+  }
 }
