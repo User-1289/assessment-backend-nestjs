@@ -169,5 +169,57 @@ async getDashboardRevenue() {
 
     return revenueReport; 
   }
+
+  async getDashboardCustomerSat() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const monthIndex = now.getMonth();  
+
+  const currMonthNumber = monthIndex + 1;  
+  const prevMonthNumber = currMonthNumber === 1 ? 12 : currMonthNumber - 1;
+  const prevMonthYear = currMonthNumber === 1 ? year - 1 : year;
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const monthName = monthNames[monthIndex];
+  const prevMonthName = monthNames[prevMonthNumber - 1];
+
+  const formatMonth = (y: number, m: number) =>
+    `${y}-${m.toString().padStart(2, '0')}`;
+
+  const getRevenueForMonth = async (y: number, m: number) => {
+    const start = new Date(y, m - 1, 1);
+    const end = new Date(y, m, 0);
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+
+    const result = await this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoin('order.product', 'product')
+      .where('DATE(order.date_added) BETWEEN :start AND :end', { start: startStr, end: endStr })
+      .select('SUM(product.price)', 'totalRevenue')
+      .getRawOne();
+
+    return parseFloat(result.totalRevenue) || 0;
+  };
+
+  const currMonthRevenue = await getRevenueForMonth(year, currMonthNumber);
+  const prevMonthRevenue = await getRevenueForMonth(prevMonthYear, prevMonthNumber);
+
+  return [
+    {
+      currmonthName: monthName,
+      month: formatMonth(year, currMonthNumber),
+      totalRevenue: currMonthRevenue
+    },
+    {
+       prevMonthName,
+      month: formatMonth(prevMonthYear, prevMonthNumber),
+      totalRevenue: prevMonthRevenue
+    }
+  ];
+}
     
 }
