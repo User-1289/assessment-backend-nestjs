@@ -92,4 +92,34 @@ export class AppService {
       ])
       .getMany();
   }
+
+  async getDashboardMetrics(dateStart: string, dateEnd: string): Promise<any> {
+    if(!dateStart || !dateEnd) {
+      return { error: 'Both date_start and date_end query parameters are required.' };
+    }
+    const totalNewCustomers = await this.customerRepo.createQueryBuilder('customer')
+      .where('customer.date_added BETWEEN :start AND :end', { start: dateStart, end: dateEnd })
+      .getCount();
+    const ordersInDateRange = await this.orderRepo.createQueryBuilder('order')
+      .where('order.date_added BETWEEN :start AND :end', { start: dateStart, end: dateEnd })
+      .getCount();
+    const totalOrders = ordersInDateRange;
+    let totalSales = 0;
+    //const orders = await this.orderRepo.find({ relations: ['product'] });
+    const orders = await this.orderRepo.createQueryBuilder('order')
+      .leftJoinAndSelect('order.product', 'product')
+      .where('order.date_added BETWEEN :start AND :end', { start: dateStart, end: dateEnd })
+      .getMany();
+    orders.forEach(order => {
+      if (order.product && order.product.price) {
+        totalSales += order.product.price;
+      }
+    });
+    return {
+      totalNewCustomers,
+      totalOrders,
+      totalSales
+    };
+  }
+    
 }
