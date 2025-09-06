@@ -34,4 +34,9 @@ export class AppController {
   async getVisitorInsights(){
     return this.appService.getVisitorInsights()
   }
+
+  @Get("/api/dashboard/top-products")
+  async getTopProducts() {
+    this.appService.getTopProducts()
+  }
 }
