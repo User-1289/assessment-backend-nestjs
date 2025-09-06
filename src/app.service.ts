@@ -20,19 +20,6 @@ export class AppService {
     return `Hello ${name ?? 'World'}!`;
   }
 
-  async createCustomer(customerData: { name: string; email: string }): Promise<Customer> {
-    const customer = this.customerRepo.create(customerData);
-    return this.customerRepo.save(customer);
-  }
-
-  async getAllCustomers(): Promise<Customer[]> {
-    return this.customerRepo.find();
-  }
-
-  async getCustomerById(customerId: string): Promise<Customer | null> {
-    return this.customerRepo.findOne({ where: { customer_id: parseInt(customerId) } });
-  }
-
   async createProduct(productData: { name: string; price: number; stock_left: number }): Promise<Products> {
     const product = this.productRepo.create(productData);
     return this.productRepo.save(product);
@@ -170,56 +157,68 @@ async getDashboardRevenue() {
     return revenueReport; 
   }
 
-  async getDashboardCustomerSat() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const monthIndex = now.getMonth();  
+    async getDashboardCustomerSat() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const monthIndex = now.getMonth();  
 
-  const currMonthNumber = monthIndex + 1;  
-  const prevMonthNumber = currMonthNumber === 1 ? 12 : currMonthNumber - 1;
-  const prevMonthYear = currMonthNumber === 1 ? year - 1 : year;
+    const currMonthNumber = monthIndex + 1;  
+    const prevMonthNumber = currMonthNumber === 1 ? 12 : currMonthNumber - 1;
+    const prevMonthYear = currMonthNumber === 1 ? year - 1 : year;
 
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-  const monthName = monthNames[monthIndex];
-  const prevMonthName = monthNames[prevMonthNumber - 1];
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    const monthName = monthNames[monthIndex];
+    const prevMonthName = monthNames[prevMonthNumber - 1];
 
-  const formatMonth = (y: number, m: number) =>
-    `${y}-${m.toString().padStart(2, '0')}`;
+    const formatMonth = (y: number, m: number) =>
+      `${y}-${m.toString().padStart(2, '0')}`;
 
-  const getRevenueForMonth = async (y: number, m: number) => {
-    const start = new Date(y, m - 1, 1);
-    const end = new Date(y, m, 0);
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    const getRevenueForMonth = async (y: number, m: number) => {
+      const start = new Date(y, m - 1, 1);
+      const end = new Date(y, m, 0);
+      const startStr = start.toISOString().split('T')[0];
+      const endStr = end.toISOString().split('T')[0];
 
-    const result = await this.orderRepo
+      const result = await this.orderRepo
+        .createQueryBuilder('order')
+        .leftJoin('order.product', 'product')
+        .where('DATE(order.date_added) BETWEEN :start AND :end', { start: startStr, end: endStr })
+        .select('SUM(product.price)', 'totalRevenue')
+        .getRawOne();
+
+      return parseFloat(result.totalRevenue) || 0;
+    };
+
+    const currMonthRevenue = await getRevenueForMonth(year, currMonthNumber);
+    const prevMonthRevenue = await getRevenueForMonth(prevMonthYear, prevMonthNumber);
+
+    return [
+      {
+        currmonthName: monthName,
+        month: formatMonth(year, currMonthNumber),
+        totalRevenue: currMonthRevenue
+      },
+      {
+        prevMonthName,
+        month: formatMonth(prevMonthYear, prevMonthNumber),
+        totalRevenue: prevMonthRevenue
+      }
+    ];
+  }
+
+  async getVisitorInsights() {
+    const geoSales = await this.orderRepo
       .createQueryBuilder('order')
+      .leftJoin('order.customer', 'customer')
       .leftJoin('order.product', 'product')
-      .where('DATE(order.date_added) BETWEEN :start AND :end', { start: startStr, end: endStr })
-      .select('SUM(product.price)', 'totalRevenue')
-      .getRawOne();
+      .select('customer.region', 'region')
+      .addSelect('COUNT(order.order_id)', 'salesCount')
+      .groupBy('customer.region')
+      .getRawMany();
 
-    return parseFloat(result.totalRevenue) || 0;
-  };
-
-  const currMonthRevenue = await getRevenueForMonth(year, currMonthNumber);
-  const prevMonthRevenue = await getRevenueForMonth(prevMonthYear, prevMonthNumber);
-
-  return [
-    {
-      currmonthName: monthName,
-      month: formatMonth(year, currMonthNumber),
-      totalRevenue: currMonthRevenue
-    },
-    {
-       prevMonthName,
-      month: formatMonth(prevMonthYear, prevMonthNumber),
-      totalRevenue: prevMonthRevenue
-    }
-  ];
-}
-    
+    return geoSales;
+  }  
 }

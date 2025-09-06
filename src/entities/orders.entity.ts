@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import {Products} from './products.entity'
-
+import { Customer } from './customer.entity';
 @Entity()
 export class Orders {
   @PrimaryGeneratedColumn()
@@ -12,4 +12,11 @@ export class Orders {
 
   @Column()
   date_added: string
+
+  @ManyToOne(() => Customer)
+  @JoinColumn({
+    name: 'customer_id',
+  })
+  customer: Customer
+  
 }
