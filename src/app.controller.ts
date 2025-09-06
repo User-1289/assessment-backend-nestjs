@@ -29,4 +29,9 @@ export class AppController {
   async getDashboardCustomerSat(){
     return this.appService.getDashboardCustomerSat()
   }
+
+  @Get("/api/dashboard/visitor-insights")
+  async getVisitorInsights(){
+    return this.appService.getVisitorInsights()
+  }
 }

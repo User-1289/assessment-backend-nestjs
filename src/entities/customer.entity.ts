@@ -1,5 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
-
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Orders } from './orders.entity';
 @Entity()
 export class Customer {
   @PrimaryGeneratedColumn()
@@ -13,4 +13,11 @@ export class Customer {
 
   @Column()
   date_added: string
+
+@Column({ type: 'varchar', length: 100, default: 'India', nullable: false })
+region: string;
+  
+
+  @OneToMany(() => Orders, order => order.customer)
+  orders: Orders[];
 }
