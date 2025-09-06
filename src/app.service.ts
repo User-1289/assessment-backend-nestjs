@@ -222,4 +222,28 @@ const geoSales = await this.orderRepo
 
     return geoSales;
   }  
+
+  async getTopProducts() {
+    const topProducts = await this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoin('order.product', 'product')
+      .select('product.product_id', 'productId')
+      .addSelect('product.name', 'productName')
+      .addSelect('product.price', 'price')
+      .addSelect('COUNT(order.order_id)', 'salesCount')
+      .addSelect('SUM(product.price)', 'totalRevenue')
+      .groupBy('product.product_id')
+      .addGroupBy('product.name')
+      .addGroupBy('product.price')
+      .orderBy('totalRevenue', 'DESC')
+      .getRawMany();
+
+    return topProducts.map(product => ({
+      productId: parseInt(product.productId),
+      productName: product.productName,
+      price: parseFloat(product.price),
+      salesCount: parseInt(product.salesCount),
+      totalRevenue: parseFloat(product.totalRevenue)
+    }));
+  }
 }
