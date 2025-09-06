@@ -121,5 +121,53 @@ export class AppService {
       totalSales
     };
   }
+
+async getDashboardRevenue() {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    const today = new Date();               
+    const dayNumber = today.getDay();       
+    const daysSinceMonday = (dayNumber + 6) % 7;
+    const monday = new Date(today);
+    monday.setHours(0, 0, 0, 0);
+    monday.setDate(today.getDate() - daysSinceMonday);
+
+    const format = (d: Date) =>
+      d.toISOString().split('T')[0];
+
+    const weekDates: string[] = [];
+    for (let i = 0; i <= daysSinceMonday; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      weekDates.push(format(d));
+    }
+
+    const revenuePromises = weekDates.map(async (dateStr) => {
+      const result = await this.orderRepo
+        .createQueryBuilder('order')
+        .leftJoin('order.product', 'product')
+        .where('DATE(order.date_added) = :date', { date: dateStr })
+        .select('COUNT(order.order_id)', 'totalOrders')
+        .addSelect('SUM(product.price)', 'totalSales')
+        .getRawOne()
+
+      const totalOrders = parseInt(result.totalOrders, 10) || 0;
+      const totalSales = parseFloat(result.totalSales) || 0;
+
+
+      const dateObj = new Date(dateStr);
+      const dayName = dayNames[dateObj.getDay()];
+      return {
+        date: dateStr,
+        totalOrders,
+        totalSales,
+        dayName
+      };
+    });
+
+    const revenueReport = await Promise.all(revenuePromises);
+
+    return revenueReport; 
+  }
     
 }
