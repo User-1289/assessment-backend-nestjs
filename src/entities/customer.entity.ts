@@ -14,10 +14,10 @@ export class Customer {
   @Column()
   date_added: string
 
-  @Column()
-  region: string
+@Column({ type: 'varchar', length: 100, default: 'India', nullable: false })
+region: string;
   
 
-  @OneToMany(() => Orders, order => order.order_id)
+  @OneToMany(() => Orders, order => order.customer)
   orders: Orders[];
 }

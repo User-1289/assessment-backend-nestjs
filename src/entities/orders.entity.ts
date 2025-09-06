@@ -13,10 +13,8 @@ export class Orders {
   @Column()
   date_added: string
 
-  @ManyToOne(() => Customer)
-  @JoinColumn({
-    name: 'customer_id',
-  })
-  customer: Customer
+  @ManyToOne(() => Customer, customer => customer.orders)
+  @JoinColumn({ name: 'customer_id' })
+  customer: Customer;
   
 }

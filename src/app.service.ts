@@ -210,14 +210,15 @@ async getDashboardRevenue() {
   }
 
   async getVisitorInsights() {
-    const geoSales = await this.orderRepo
-      .createQueryBuilder('order')
-      .leftJoin('order.customer', 'customer')
-      .leftJoin('order.product', 'product')
-      .select('customer.region', 'region')
-      .addSelect('COUNT(order.order_id)', 'salesCount')
-      .groupBy('customer.region')
-      .getRawMany();
+const geoSales = await this.orderRepo
+  .createQueryBuilder('order')
+  .leftJoin('order.customer', 'customer')
+  .leftJoin('order.product', 'product')
+  .select("COALESCE(customer.region, 'Unknown')", 'region')
+  .addSelect('COUNT(order.order_id)', 'salesCount')
+  .addSelect('ARRAY_AGG(order.order_id)', 'orders')
+  .groupBy('customer.region')
+  .getRawMany();
 
     return geoSales;
   }  
