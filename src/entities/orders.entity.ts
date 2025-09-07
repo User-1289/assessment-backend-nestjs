@@ -16,5 +16,8 @@ export class Orders {
   @ManyToOne(() => Customer, customer => customer.orders)
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
-  
+
+  @Column({ })
+  order_type: string;
+
 }

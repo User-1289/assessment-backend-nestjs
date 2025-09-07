@@ -37,6 +37,6 @@ export class AppController {
 
   @Get("/api/dashboard/top-products")
   async getTopProducts() {
-    this.appService.getTopProducts()
+   return this.appService.getTopProducts()
   }
 }

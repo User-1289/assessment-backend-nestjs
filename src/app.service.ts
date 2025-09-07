@@ -97,6 +97,13 @@ export class AppService {
       .leftJoinAndSelect('order.product', 'product')
       .where('order.date_added BETWEEN :start AND :end', { start: dateStart, end: dateEnd })
       .getMany();
+
+        // Get unique product count separately
+    const uniqueProductResult = await this.orderRepo.createQueryBuilder('order')
+      .leftJoin('order.product', 'product')
+      .select('COUNT(DISTINCT product.product_id)', 'uniqueProductCount')
+      .where('order.date_added BETWEEN :start AND :end', { start: dateStart, end: dateEnd })
+      .getRawOne();
     orders.forEach(order => {
       if (order.product && order.product.price) {
         totalSales += order.product.price;
@@ -105,7 +112,8 @@ export class AppService {
     return {
       totalNewCustomers,
       totalOrders,
-      totalSales
+      totalSales,
+      uniqueProductCount: parseInt(uniqueProductResult.uniqueProductCount) || 0
     };
   }
 
@@ -130,17 +138,18 @@ async getDashboardRevenue() {
     }
 
     const revenuePromises = weekDates.map(async (dateStr) => {
-      const result = await this.orderRepo
-        .createQueryBuilder('order')
-        .leftJoin('order.product', 'product')
-        .where('DATE(order.date_added) = :date', { date: dateStr })
-        .select('COUNT(order.order_id)', 'totalOrders')
-        .addSelect('SUM(product.price)', 'totalSales')
-        .getRawOne()
+    const result = await this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoin('order.product', 'product')
+      .where('DATE(order.date_added) = :date', { date: dateStr })
+      .select('order.order_type', 'orderType')
+      .addSelect('COUNT(order.order_id)', 'totalOrders')
+      .addSelect('SUM(product.price)', 'totalSales')
+      .groupBy('order.order_type')
+      .getRawMany();
 
-      const totalOrders = parseInt(result.totalOrders, 10) || 0;
-      const totalSales = parseFloat(result.totalSales) || 0;
-
+      const totalOrders = result.reduce((acc, curr) => acc + parseInt(curr.totalOrders, 10), 0);
+      const totalSales = result.reduce((acc, curr) => acc + parseFloat(curr.totalSales), 0);
 
       const dateObj = new Date(dateStr);
       const dayName = dayNames[dateObj.getDay()];
@@ -148,7 +157,8 @@ async getDashboardRevenue() {
         date: dateStr,
         totalOrders,
         totalSales,
-        dayName
+        dayName,
+        breakdown: result
       };
     });
 
@@ -227,23 +237,23 @@ const geoSales = await this.orderRepo
     const topProducts = await this.orderRepo
       .createQueryBuilder('order')
       .leftJoin('order.product', 'product')
-      .select('product.product_id', 'productId')
-      .addSelect('product.name', 'productName')
+      .select('product.product_id', 'productid')
+      .addSelect('product.name', 'productname')
       .addSelect('product.price', 'price')
-      .addSelect('COUNT(order.order_id)', 'salesCount')
-      .addSelect('SUM(product.price)', 'totalRevenue')
+      .addSelect('COUNT(order.order_id)', 'salescount')
+      .addSelect('SUM(product.price)', 'totalrevenue')
       .groupBy('product.product_id')
       .addGroupBy('product.name')
       .addGroupBy('product.price')
-      .orderBy('totalRevenue', 'DESC')
+      .orderBy('totalrevenue', 'DESC')
       .getRawMany();
 
     return topProducts.map(product => ({
-      productId: parseInt(product.productId),
-      productName: product.productName,
+      productId: parseInt(product.productid),
+      productName: product.productname,
       price: parseFloat(product.price),
-      salesCount: parseInt(product.salesCount),
-      totalRevenue: parseFloat(product.totalRevenue)
+      salesCount: parseInt(product.salescount),
+      totalRevenue: parseFloat(product.totalrevenue)
     }));
   }
 }
